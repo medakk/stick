@@ -601,11 +601,27 @@ impl Controller {
 
         // Get the min and max absolute values for axis.
         let mut a = MaybeUninit::<AbsInfo>::uninit();
+        /*
         assert_ne!(
             unsafe { ioctl(fd, 0x_8018_4540, a.as_mut_ptr().cast()) },
             -1
         );
-        let a = unsafe { a.assume_init() };
+         */
+        let res = unsafe { ioctl(fd, 0x_8018_4540, a.as_mut_ptr().cast()) };
+        
+        let a = if res == -1 {
+            AbsInfo{
+                value: 0,
+                minimum: i16::MIN as i32,
+                maximum: i16::MAX as i32,
+                fuzz: 0,
+                flat: 0,
+                resolution: 0
+            }
+        } else {
+            unsafe { a.assume_init() }
+        };
+
         let norm = (a.maximum as f64 - a.minimum as f64) * 0.5;
         let zero = a.minimum as f64 + norm;
         // Invert so multiplication can be used instead of division
